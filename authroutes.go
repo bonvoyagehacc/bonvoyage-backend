@@ -43,7 +43,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func Routes() {
+func AuthRoutes() {
     // http.HandleFunc("/photo", photoHandler);
     http.HandleFunc("/auth/login", loginHandler);
     http.HandleFunc("/auth/register", registerHandler);

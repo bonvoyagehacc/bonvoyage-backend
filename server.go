@@ -5,7 +5,8 @@ import (
 )
 
 func main() {
-    Routes()
-    http.ListenAndServe(":8080", nil)
+    port := ":8080"
+    AuthRoutes()
+    http.ListenAndServe(port, nil)
 }
 
