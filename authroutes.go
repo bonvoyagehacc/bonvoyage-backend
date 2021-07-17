@@ -13,38 +13,31 @@ type credRequest struct {
 }
 
 type tokenResponse struct {
-    AccessToken string
+    AccessToken string `json:"accessToken"`
 }
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
-    if r.Method != "POST" {
-        w.WriteHeader(http.StatusMethodNotAllowed)
-        return
-    }
+    if r.Method != "POST" { w.WriteHeader(http.StatusMethodNotAllowed); return }
 
     var creds credRequest
     if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
+        http.Error(w, err.Error(), http.StatusBadRequest); return
     }
 
     /* validate query */
     if err := validator.Validate(creds); err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
+        http.Error(w, err.Error(), http.StatusBadRequest); return
     }
 
     /* query db */
     if err := RegisterUser(creds.Username, creds.Password); err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
+        http.Error(w, err.Error(), http.StatusBadRequest); return
     }
 
     /* return access token */
     tokenString, err := GenerateToken(creds.Username)
     if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        return
+        w.WriteHeader(http.StatusInternalServerError); return
     }
     token := tokenResponse{AccessToken: tokenString}
 
@@ -53,21 +46,16 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-    if r.Method != "POST" {
-        w.WriteHeader(http.StatusMethodNotAllowed)
-        return
-    }
+    if r.Method != "POST" { w.WriteHeader(http.StatusMethodNotAllowed); return }
 
     var creds credRequest
     if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
+        http.Error(w, err.Error(), http.StatusBadRequest); return
     }
 
     /* validate query */
     if err := validator.Validate(creds); err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
+        http.Error(w, err.Error(), http.StatusBadRequest); return
     }
 
     /* query db */
@@ -83,8 +71,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
     /* return token */
     tokenString, err := GenerateToken(creds.Username)
     if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        return
+        w.WriteHeader(http.StatusInternalServerError); return
     }
     token := tokenResponse{AccessToken: tokenString}
 
@@ -92,8 +79,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(token)
 }
 
-func AuthRoutes() {
-    http.HandleFunc("/auth/register", registerHandler);
-    http.HandleFunc("/auth/login", loginHandler);
+func AuthRoutes(mux *http.ServeMux) {
+    mux.HandleFunc("/auth/register", registerHandler);
+    mux.HandleFunc("/auth/login", loginHandler);
 }
 

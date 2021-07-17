@@ -1,2 +1,4 @@
-## bon voyage hackathon
+## pixolous backend
+
+backend go server for pixolos
 
