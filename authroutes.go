@@ -8,8 +8,8 @@ import (
 )
 
 type credRequest struct {
-    Username string `validate:"min=3,max=64,nonzero"`
-    Password string `validate:"min=8,max=128,nonzero"`
+    Username string `json:"username" validate:"min=3,max=64,nonzero"`
+    Password string `json:"password" validate:"min=8,max=128,nonzero"`
 }
 
 type tokenResponse struct {
@@ -17,14 +17,11 @@ type tokenResponse struct {
 }
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
-    if r.Method != "POST" { w.WriteHeader(http.StatusMethodNotAllowed); return }
 
     var creds credRequest
     if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest); return
+        http.Error(w, "malformed request", http.StatusBadRequest); return
     }
-
-    /* validate query */
     if err := validator.Validate(creds); err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest); return
     }
@@ -46,14 +43,11 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-    if r.Method != "POST" { w.WriteHeader(http.StatusMethodNotAllowed); return }
 
     var creds credRequest
     if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest); return
+        http.Error(w, "malformed request", http.StatusBadRequest); return
     }
-
-    /* validate query */
     if err := validator.Validate(creds); err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest); return
     }
@@ -80,7 +74,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func AuthRoutes(mux *http.ServeMux) {
-    mux.HandleFunc("/auth/register", registerHandler);
-    mux.HandleFunc("/auth/login", loginHandler);
+    mux.Handle("/auth/register", RestrictMethod("POST", http.HandlerFunc(registerHandler)))
+    mux.Handle("/auth/login", RestrictMethod("POST", http.HandlerFunc(loginHandler)))
 }
 

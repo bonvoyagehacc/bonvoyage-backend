@@ -1,6 +1,7 @@
 package main
 
 import (
+    "fmt"
     "net/http"
     "github.com/rs/cors"
 )
@@ -17,6 +18,8 @@ func main() {
         AllowCredentials: true,
     })
     handler := c.Handler(mux)
+
+    fmt.Printf("Listening on port %s", port)
     http.ListenAndServe(port, handler)
 }
 
