@@ -3,6 +3,9 @@ package main
 import (
     "fmt"
     "io"
+    "os"
+    "archive/zip"
+    "path/filepath"
     "encoding/hex"
     "database/sql"
     "crypto/md5"
@@ -45,12 +48,12 @@ func RegisterUser(username string, password string) (int, error) {
     defer db.Close()
 
     query := `
-    INSERT INTO users (username, password)
-    VALUES ($1, $2)
+    INSERT INTO users (username, password, hash)
+    VALUES ($1, $2, $3)
     RETURNING id
     `
     id := 0
-    err := db.QueryRow(query, username, password).Scan(&id)
+    err := db.QueryRow(query, username, password, GenerateMD5(username)).Scan(&id)
     return id, err
 }
 
@@ -66,23 +69,70 @@ func AuthenticateUser(username string, password string) (int, error) {
     return id, err
 }
 
+func GetUserHash(id int) (string, error) {
+    db := dbConnection()
+    defer db.Close()
+
+    query := `
+    SELECT hash FROM users WHERE id = $1
+    `
+    hash := ""
+    err := db.QueryRow(query, id).Scan(&hash)
+    return hash, err
+}
+
 /* =-=-=-=-=-=-= PHOTOS =-=-=-=-=-=-=-=*/
+// CREATE TABLE photos (
+//     id serial primary key,
+//     userid int not null,
+//     filename varchar(64) not null,
+//     CONSTRAINT fk_user FOREIGN KEY(userid) REFERENCES users(id)
+// )
+
 func GenerateMD5(raw string) string {
     hasher := md5.New()
     io.WriteString(hasher, raw)
     return hex.EncodeToString(hasher.Sum(nil)[:])
 }
 
-func NewPhoto(userid int, filename string) {
+func WriteImageFile(file *zip.File, userhash string, filename string) error {
+
+    /* create parent dir if it doesnt already exist */
+    if err := os.MkdirAll(filepath.Join(ResourceDir, userhash), os.ModePerm); err != nil {
+        return err
+    }
+
+    /* copy unziped file to disk */
+    newFile, err := os.OpenFile(filepath.Join(ResourceDir, userhash, filename), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+    if err != nil {
+        return err
+    }
+    defer newFile.Close()
+
+    handle, err := file.Open()
+    if err != nil {
+        return err
+    }
+    defer handle.Close()
+
+    _, err = io.Copy(newFile, handle)
+
+    return nil
+
+}
+
+func NewPhoto(userid int, filename string) error {
     db := dbConnection()
     defer db.Close()
 
-    /* grab extension */
-
-    /* hash filename */
-    filehash := GenerateMD5(filename)
-    fmt.Println(filehash)
-
     /* insert into db */
-
+    query := `
+    INSERT INTO photos (userid, filename)
+    VALUES ($1, $2)
+    RETURNING id
+    `
+    id := 0
+    err := db.QueryRow(query, userid, filename).Scan(&id)
+    return err
 }
+
