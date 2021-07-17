@@ -2,6 +2,7 @@ package main
 
 import (
     "fmt"
+    "context"
     "net/http"
 )
 
@@ -28,8 +29,11 @@ func RestrictAuth(next http.Handler) http.Handler {
             return
         }
 
-        fmt.Println(username)
+        ctx := r.Context()
+        ctx = context.WithValue(ctx, "username", username)
+        r = r.WithContext(ctx)
 
         next.ServeHTTP(w, r)
     })
 }
+

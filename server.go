@@ -19,7 +19,7 @@ func main() {
     })
     handler := c.Handler(mux)
 
-    fmt.Printf("Listening on port %s", port)
+    fmt.Printf("Listening on port %s\n", port)
     http.ListenAndServe(port, handler)
 }
 
