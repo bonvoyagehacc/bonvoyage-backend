@@ -40,7 +40,8 @@ func dbConnection() *sql.DB {
 // CREATE TABLE users(
 //     id serial primary key,
 //     username varchar(64) not null unique,
-//     password varchar(128) not null
+//     password varchar(128) not null,
+//     hash     varchar(32) not null
 // );
 
 func RegisterUser(username string, password string) (int, error) {
@@ -87,7 +88,7 @@ func GetUserHash(id int) (string, error) {
 //     userid int not null,
 //     filename varchar(64) not null,
 //     CONSTRAINT fk_user FOREIGN KEY(userid) REFERENCES users(id)
-// )
+// );
 
 func GenerateMD5(raw string) string {
     hasher := md5.New()

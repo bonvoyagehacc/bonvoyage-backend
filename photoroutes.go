@@ -33,7 +33,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
     /* get list of files */
     for _, file := range reader.File {
-
         ext := filepath.Ext(file.Name)
         filehash := GenerateMD5(file.Name)
 
@@ -41,10 +40,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
         NewPhoto(userid.(int), filehash+ext)
         /* write photo to drive */
         WriteImageFile(file, userhash, filehash+ext)
-
     }
-
-
 }
 
 func galleryHandler(w http.ResponseWriter, r *http.Request) {
@@ -54,3 +50,4 @@ func PhotoRoutes(mux *http.ServeMux) {
     mux.Handle("/photo/upload", RestrictMethod("POST", RestrictAuth(http.HandlerFunc(uploadHandler))));
     mux.Handle("/photo/gallery", RestrictMethod("GET", RestrictAuth(http.HandlerFunc(galleryHandler))));
 }
+

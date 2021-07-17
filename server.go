@@ -15,6 +15,7 @@ func main() {
 
     c := cors.New(cors.Options{
         AllowedOrigins: []string{"https://pixolo.us", "http://localhost:3000"},
+        AllowedHeaders: []string{"x-access-token", "Content-Type"}
         AllowCredentials: true,
     })
     handler := c.Handler(mux)
