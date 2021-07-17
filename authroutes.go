@@ -2,6 +2,7 @@ package main
 
 import (
     "net/http"
+    "database/sql"
     "encoding/json"
     "gopkg.in/validator.v2"
 )
@@ -15,7 +16,7 @@ type tokenResponse struct {
     AccessToken string
 }
 
-func loginHandler(w http.ResponseWriter, r *http.Request) {
+func registerHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != "POST" {
         w.WriteHeader(http.StatusMethodNotAllowed)
         return
@@ -40,20 +41,59 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     /* return access token */
+    tokenString, err := GenerateToken(creds.Username)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+    token := tokenResponse{AccessToken: tokenString}
+
     w.Header().Add("content-type", "application/json")
-    token := tokenResponse{AccessToken: "peepeepoopoo"}
     json.NewEncoder(w).Encode(token)
 }
 
-func registerHandler(w http.ResponseWriter, r *http.Request) {
+func loginHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != "POST" {
         w.WriteHeader(http.StatusMethodNotAllowed)
         return
     }
+
+    var creds credRequest
+    if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    /* validate query */
+    if err := validator.Validate(creds); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    /* query db */
+    if err := AuthenticateUser(creds.Username, creds.Password); err != nil {
+        if err == sql.ErrNoRows {
+            w.WriteHeader(http.StatusUnauthorized)
+        } else {
+            w.WriteHeader(http.StatusInternalServerError)
+        }
+        return
+    }
+
+    /* return token */
+    tokenString, err := GenerateToken(creds.Username)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+    token := tokenResponse{AccessToken: tokenString}
+
+    w.Header().Add("content-type", "application/json")
+    json.NewEncoder(w).Encode(token)
 }
 
 func AuthRoutes() {
-    http.HandleFunc("/auth/login", loginHandler);
     http.HandleFunc("/auth/register", registerHandler);
+    http.HandleFunc("/auth/login", loginHandler);
 }
 
