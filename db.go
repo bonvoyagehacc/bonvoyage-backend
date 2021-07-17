@@ -16,43 +16,11 @@ type PostgresConnection struct {
 
 // CREATE TABLE users(
 //     id serial primary key,
-//     username varchar(64) not null,
+//     username varchar(64) not null unique,
 //     password varchar(128) not null
 // );
 
-type PostgresDB struct {
-    db *sql.DB
-}
-
-func (p *PostgresDB) RegisterUser(username string, password string) {
-    db := p.db
-
-    query := `
-    INSERT INTO users (username, password)
-    VALUES ($1, $2)
-    RETURNING id
-    `
-    _, err := db.Exec(query, username, password)
-    if err != nil {
-        panic(err)
-    }
-    return
-}
-
-func (p *PostgresDB) AuthenticateUser(username string, password string) {
-    db := p.db
-
-    query := `
-    SELECT id FROM users WHERE username = $1 AND password = $2
-    `
-    _, err := db.Exec(query, username, password)
-    if err != nil {
-        panic(err)
-    }
-    return
-}
-
-func main() {
+func dbConnection() *sql.DB {
 
     connectionString := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", ConnectionSecrets.Host, ConnectionSecrets.Port, ConnectionSecrets.User, ConnectionSecrets.Password, ConnectionSecrets.DBName)
 
@@ -61,16 +29,34 @@ func main() {
     if err != nil {
         panic(err)
     }
-    defer db.Close()
-
     err = db.Ping()
     if err != nil {
         panic(err)
     }
+    return db
+}
 
-    psdb := &PostgresDB{db: db}
-    psdb.RegisterUser("pinosaur", "peepee")
+func RegisterUser(username string, password string) error {
+    db := dbConnection()
+    defer db.Close()
 
-    fmt.Println("Connected to database")
+    query := `
+    INSERT INTO users (username, password)
+    VALUES ($1, $2)
+    `
+    _, err := db.Exec(query, username, password)
+    return err
+}
+
+func AuthenticateUser(username string, password string) error {
+    db := dbConnection()
+    defer db.Close()
+
+    query := `
+    SELECT id FROM users WHERE username = $1 AND password = $2
+    `
+    id := 0
+    err := db.QueryRow(query, username, password).Scan(&id)
+    return err
 }
 

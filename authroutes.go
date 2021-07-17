@@ -3,12 +3,12 @@ package main
 import (
     "net/http"
     "encoding/json"
-    "fmt"
+    "gopkg.in/validator.v2"
 )
 
 type credRequest struct {
-    Username string
-    Password string
+    Username string `validate:"min=3,max=64,nonzero"`
+    Password string `validate:"min=8,max=128,nonzero"`
 }
 
 type tokenResponse struct {
@@ -22,13 +22,22 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     var creds credRequest
-    err := json.NewDecoder(r.Body).Decode(&creds)
-    if err != nil {
+    if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
 
-    fmt.Println(creds)
+    /* validate query */
+    if err := validator.Validate(creds); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    /* query db */
+    if err := RegisterUser(creds.Username, creds.Password); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
 
     /* return access token */
     w.Header().Add("content-type", "application/json")
@@ -44,7 +53,6 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func AuthRoutes() {
-    // http.HandleFunc("/photo", photoHandler);
     http.HandleFunc("/auth/login", loginHandler);
     http.HandleFunc("/auth/register", registerHandler);
 }
