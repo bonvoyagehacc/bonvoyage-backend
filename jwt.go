@@ -7,15 +7,15 @@ import (
 )
 
 type Claims struct {
-    Username string
+    UserID int
     jwt.StandardClaims
 }
 
-func GenerateToken(username string) (string, error) {
+func GenerateToken(id int) (string, error) {
 
     expire := time.Now().Add(time.Duration(JWTLifetime) * time.Minute)
     claims := &Claims{
-        Username: username,
+        UserID: id,
         StandardClaims: jwt.StandardClaims{
             ExpiresAt: expire.Unix(),
         },
@@ -27,18 +27,18 @@ func GenerateToken(username string) (string, error) {
     return tokenString, err
 }
 
-func ValidateToken(tokenString string) (string, error) {
+func ValidateToken(tokenString string) (int, error) {
 
     claims := &Claims{}
     token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
         return JWTSecret, nil
     })
     if err != nil {
-        return "", err
+        return 0, err
     }
     if !token.Valid {
-        return "", errors.New("invalid access token")
+        return 0, errors.New("invalid access token")
     }
-    return claims.Username, nil
+    return claims.UserID, nil
 }
 

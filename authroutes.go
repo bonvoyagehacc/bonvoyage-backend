@@ -27,12 +27,13 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     /* query db */
-    if err := RegisterUser(creds.Username, creds.Password); err != nil {
+    id, err := RegisterUser(creds.Username, creds.Password)
+    if err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest); return
     }
 
     /* return access token */
-    tokenString, err := GenerateToken(creds.Username)
+    tokenString, err := GenerateToken(id)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError); return
     }
@@ -53,7 +54,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     /* query db */
-    if err := AuthenticateUser(creds.Username, creds.Password); err != nil {
+    id, err := AuthenticateUser(creds.Username, creds.Password)
+    if err != nil {
         if err == sql.ErrNoRows {
             w.WriteHeader(http.StatusUnauthorized)
         } else {
@@ -63,7 +65,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     /* return token */
-    tokenString, err := GenerateToken(creds.Username)
+    tokenString, err := GenerateToken(id)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError); return
     }

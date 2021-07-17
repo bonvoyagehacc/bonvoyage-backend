@@ -19,7 +19,10 @@ func Unzip(zipped io.ReadCloser) error {
     /* get list of files */
     for _, file := range reader.File {
         fmt.Println("Reading", file.Name)
+        hash := GenerateMD5(file.Name)
+        fmt.Println(hash)
     }
+
 
     return nil
 

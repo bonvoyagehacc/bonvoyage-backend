@@ -22,7 +22,7 @@ func RestrictAuth(next http.Handler) http.Handler {
 
         accessToken := r.Header.Get("x-access-token")
 
-        username, err := ValidateToken(accessToken)
+        id, err := ValidateToken(accessToken)
         if err != nil {
             fmt.Println(err)
             w.WriteHeader(http.StatusUnauthorized)
@@ -30,7 +30,7 @@ func RestrictAuth(next http.Handler) http.Handler {
         }
 
         ctx := r.Context()
-        ctx = context.WithValue(ctx, "username", username)
+        ctx = context.WithValue(ctx, "userid", id)
         r = r.WithContext(ctx)
 
         next.ServeHTTP(w, r)
