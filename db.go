@@ -1,14 +1,14 @@
 package main
 
 import (
-	"archive/zip"
-	"crypto/md5"
-	"database/sql"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"archive/zip"
+	"crypto/md5"
+	"database/sql"
+	"encoding/hex"
 
 	_ "github.com/lib/pq"
 )
@@ -145,5 +145,19 @@ func GetUserPhotos(userid int) ([]string, error) {
 	query := `
     SELECT filename FROM photos WHERE userid = $1
     `
+    rows, err := db.Query(query, userid)
+    if err != nil {
+        return []string{}, err
+    }
+    defer rows.Close()
 
+    filenames := []string{}
+    for rows.Next() {
+        filename := ""
+        rows.Scan(&filename)
+        filenames = append(filenames, filename)
+    }
+
+    return filenames, nil
 }
+
