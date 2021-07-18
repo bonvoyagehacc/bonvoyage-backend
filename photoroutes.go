@@ -6,6 +6,7 @@ import (
     "archive/zip"
     "io/ioutil"
     "net/http"
+    "github.com/pixolous/pixolousAnalyze"
 )
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -36,14 +37,20 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
         ext := filepath.Ext(file.Name)
         filehash := GenerateMD5(file.Name)
 
-        /* write photo to db - add a random string at end to take care of duplicate filenames */
-        NewPhoto(userid.(int), filehash+ext)
         /* write photo to drive */
         WriteImageFile(file, userhash, filehash+ext)
+
+        /* compute ahash */
+        ahash := pixolousAnalyze.AHash(filepath.Join(ResourceDir, userhash, filehash+ext))
+
+        /* write photo to db */
+        NewPhoto(userid.(int), filehash+ext, ahash)
     }
 }
 
 func galleryHandler(w http.ResponseWriter, r *http.Request) {
+
+
 }
 
 func PhotoRoutes(mux *http.ServeMux) {
