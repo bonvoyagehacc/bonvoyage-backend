@@ -11,7 +11,6 @@ import (
 	"encoding/hex"
 
 	_ "github.com/lib/pq"
-	"github.com/pixolous/pixolousAnalyze"
 )
 
 type PostgresConnection struct {

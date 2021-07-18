@@ -49,13 +49,19 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		filehash := GenerateMD5(file.Name)
 
 		/* write photo to drive */
-		WriteImageFile(file, userhash, filehash+ext)
+        err = WriteImageFile(file, userhash, filehash+ext)
+        if err != nil {
+            http.Error(w, "erroring saving file", http.StatusInternalServerError); return
+        }
 
 		/* compute ahash */
 		ahash := pixolousAnalyze.AHash(filepath.Join(ResourceDir, userhash, filehash+ext))
 
 		/* write photo to db */
-		NewPhoto(userid.(int), filehash+ext, ahash)
+        err := NewPhoto(userid.(int), filehash+ext, ahash)
+        if err != nil {
+            http.Error(w, "error writing to db", http.StatusInternalServerError); return
+        }
 	}
 }
 
@@ -74,20 +80,36 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+    /* get all user's photos from db */
     photoData, err := GetUserPhotos(userid.(int))
     if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
     }
 
-    pathToHash := make(map[string]string)
-    for picFilename, picAhash := range photoData {
-        pathToHash[SERVERURL+"/"+userhash+"/"+picFilename] = picAhash
+    /* group similar images */
+    var groups [][]string = pixolousAnalyze.GetSimilarGrouped(photoData)
+
+    /* filter groupped pics by using blur level */
+    filtered := []string{}
+    for _, group := range groups {
+        fmt.Println("=-=-=-=")
+        bestBlur := -1000000
+        bestPic := ""
+        for _, picpath := range group {
+            blurLevel := int(pixolousAnalyze.DetectBlur(filepath.Join(ResourceDir, userhash, picpath)))
+            if blurLevel > bestBlur {
+                bestBlur = blurLevel
+                bestPic = picpath
+            }
+            fmt.Println(blurLevel)
+        }
+        /* save least blurry pic */
+        filtered = append(filtered, SERVERURL+"/"+userhash+"/"+bestPic)
     }
-    fmt.Println(pixolousAnalyze.GetSimilarGrouped(pathToHash))
 
 	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode([]string{})
+    json.NewEncoder(w).Encode(galleryResponse{Images: filtered})
 }
 
 func PhotoRoutes(mux *http.ServeMux) {
