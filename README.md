@@ -1,4 +1,4 @@
 ## pixolous backend
 
-backend go server for pixolos
+backend go server for pixolous
 
