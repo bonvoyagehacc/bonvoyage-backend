@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 
 	_ "github.com/lib/pq"
+	"github.com/pixolous/pixolousAnalyze"
 )
 
 type PostgresConnection struct {
@@ -138,26 +139,27 @@ func NewPhoto(userid int, filename string, ahash string) error {
 	return err
 }
 
-func GetUserPhotos(userid int) ([]string, error) {
+func GetUserPhotos(userid int) (map[string]string, error) {
 	db := dbConnection()
 	defer db.Close()
 
 	query := `
-    SELECT filename FROM photos WHERE userid = $1
+    SELECT filename, ahash FROM photos WHERE userid = $1
     `
     rows, err := db.Query(query, userid)
     if err != nil {
-        return []string{}, err
+        return make(map[string]string), err
     }
     defer rows.Close()
 
-    filenames := []string{}
+    photoData := make(map[string]string)
     for rows.Next() {
         filename := ""
-        rows.Scan(&filename)
-        filenames = append(filenames, filename)
+        ahash := ""
+        rows.Scan(&filename, &ahash)
+        photoData[filename] = ahash
     }
 
-    return filenames, nil
+    return photoData, nil
 }
 

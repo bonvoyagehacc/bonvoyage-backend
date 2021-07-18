@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"path/filepath"
 
-	// "github.com/pixolous/pixolousAnalyze"
+	"github.com/pixolous/pixolousAnalyze"
 )
 
 type galleryResponse struct {
@@ -52,8 +52,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		WriteImageFile(file, userhash, filehash+ext)
 
 		/* compute ahash */
-		// ahash := pixolousAnalyze.AHash(filepath.Join(ResourceDir, userhash, filehash+ext))
-        ahash := "temp"
+		ahash := pixolousAnalyze.AHash(filepath.Join(ResourceDir, userhash, filehash+ext))
 
 		/* write photo to db */
 		NewPhoto(userid.(int), filehash+ext, ahash)
@@ -75,20 +74,20 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    filenames, err := GetUserPhotos(userid.(int))
+    photoData, err := GetUserPhotos(userid.(int))
     if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
     }
 
-    imageURLs := []string{}
-    for _, f := range filenames {
-        imageURLs = append(imageURLs, SERVERURL+"/"+userhash+"/"+f)
+    pathToHash := make(map[string]string)
+    for picFilename, picAhash := range photoData {
+        pathToHash[SERVERURL+"/"+userhash+"/"+picFilename] = picAhash
     }
-    fmt.Println(imageURLs)
+    fmt.Println(pixolousAnalyze.GetSimilarGrouped(pathToHash))
 
 	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(imageURLs)
+	json.NewEncoder(w).Encode([]string{})
 }
 
 func PhotoRoutes(mux *http.ServeMux) {
