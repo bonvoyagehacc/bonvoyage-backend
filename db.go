@@ -1,39 +1,40 @@
 package main
 
 import (
-    "fmt"
-    "io"
-    "os"
-    "archive/zip"
-    "path/filepath"
-    "encoding/hex"
-    "database/sql"
-    "crypto/md5"
-    _ "github.com/lib/pq"
+	"archive/zip"
+	"crypto/md5"
+	"database/sql"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
+	_ "github.com/lib/pq"
 )
 
 type PostgresConnection struct {
-    Host string
-    Port int
-    User string
-    Password string
-    DBName string
+	Host     string
+	Port     int
+	User     string
+	Password string
+	DBName   string
 }
 
 func dbConnection() *sql.DB {
 
-    connectionString := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", ConnectionSecrets.Host, ConnectionSecrets.Port, ConnectionSecrets.User, ConnectionSecrets.Password, ConnectionSecrets.DBName)
+	connectionString := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", ConnectionSecrets.Host, ConnectionSecrets.Port, ConnectionSecrets.User, ConnectionSecrets.Password, ConnectionSecrets.DBName)
 
-    /* validate connection */
-    db, err := sql.Open("postgres", connectionString)
-    if err != nil {
-        panic(err)
-    }
-    err = db.Ping()
-    if err != nil {
-        panic(err)
-    }
-    return db
+	/* validate connection */
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		panic(err)
+	}
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+	return db
 }
 
 /* =-=-=-=-=-=-= USERS =-=-=-=-=-=-=-=*/
@@ -45,41 +46,41 @@ func dbConnection() *sql.DB {
 // );
 
 func RegisterUser(username string, password string) (int, error) {
-    db := dbConnection()
-    defer db.Close()
+	db := dbConnection()
+	defer db.Close()
 
-    query := `
+	query := `
     INSERT INTO users (username, password, hash)
     VALUES ($1, $2, $3)
     RETURNING id
     `
-    id := 0
-    err := db.QueryRow(query, username, password, GenerateMD5(username)).Scan(&id)
-    return id, err
+	id := 0
+	err := db.QueryRow(query, username, password, GenerateMD5(username)).Scan(&id)
+	return id, err
 }
 
 func AuthenticateUser(username string, password string) (int, error) {
-    db := dbConnection()
-    defer db.Close()
+	db := dbConnection()
+	defer db.Close()
 
-    query := `
+	query := `
     SELECT id FROM users WHERE username = $1 AND password = $2
     `
-    id := 0
-    err := db.QueryRow(query, username, password).Scan(&id)
-    return id, err
+	id := 0
+	err := db.QueryRow(query, username, password).Scan(&id)
+	return id, err
 }
 
 func GetUserHash(id int) (string, error) {
-    db := dbConnection()
-    defer db.Close()
+	db := dbConnection()
+	defer db.Close()
 
-    query := `
+	query := `
     SELECT hash FROM users WHERE id = $1
     `
-    hash := ""
-    err := db.QueryRow(query, id).Scan(&hash)
-    return hash, err
+	hash := ""
+	err := db.QueryRow(query, id).Scan(&hash)
+	return hash, err
 }
 
 /* =-=-=-=-=-=-= PHOTOS =-=-=-=-=-=-=-=*/
@@ -91,49 +92,58 @@ func GetUserHash(id int) (string, error) {
 // );
 
 func GenerateMD5(raw string) string {
-    hasher := md5.New()
-    io.WriteString(hasher, raw)
-    return hex.EncodeToString(hasher.Sum(nil)[:])
+	hasher := md5.New()
+	io.WriteString(hasher, raw)
+	return hex.EncodeToString(hasher.Sum(nil)[:])
 }
 
 func WriteImageFile(file *zip.File, userhash string, filename string) error {
 
-    /* create parent dir if it doesnt already exist */
-    if err := os.MkdirAll(filepath.Join(ResourceDir, userhash), os.ModePerm); err != nil {
-        return err
-    }
+	/* create parent dir if it doesnt already exist */
+	if err := os.MkdirAll(filepath.Join(ResourceDir, userhash), os.ModePerm); err != nil {
+		return err
+	}
 
-    /* copy unziped file to disk */
-    newFile, err := os.OpenFile(filepath.Join(ResourceDir, userhash, filename), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
-    if err != nil {
-        return err
-    }
-    defer newFile.Close()
+	/* copy unziped file to disk */
+	newFile, err := os.OpenFile(filepath.Join(ResourceDir, userhash, filename), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+	if err != nil {
+		return err
+	}
+	defer newFile.Close()
 
-    handle, err := file.Open()
-    if err != nil {
-        return err
-    }
-    defer handle.Close()
+	handle, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer handle.Close()
 
-    _, err = io.Copy(newFile, handle)
+	_, err = io.Copy(newFile, handle)
 
-    return nil
+	return nil
 
 }
 
 func NewPhoto(userid int, filename string, ahash string) error {
-    db := dbConnection()
-    defer db.Close()
+	db := dbConnection()
+	defer db.Close()
 
-    /* insert into db */
-    query := `
+	/* insert into db */
+	query := `
     INSERT INTO photos (userid, filename, ahash)
     VALUES ($1, $2, $3)
     RETURNING id
     `
-    id := 0
-    err := db.QueryRow(query, userid, filename, ahash).Scan(&id)
-    return err
+	id := 0
+	err := db.QueryRow(query, userid, filename, ahash).Scan(&id)
+	return err
 }
 
+func GetUserPhotos(userid int) ([]string, error) {
+	db := dbConnection()
+	defer db.Close()
+
+	query := `
+    SELECT filename FROM photos WHERE userid = $1
+    `
+
+}
