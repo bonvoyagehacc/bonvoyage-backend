@@ -122,18 +122,18 @@ func WriteImageFile(file *zip.File, userhash string, filename string) error {
 
 }
 
-func NewPhoto(userid int, filename string) error {
+func NewPhoto(userid int, filename string, ahash string) error {
     db := dbConnection()
     defer db.Close()
 
     /* insert into db */
     query := `
-    INSERT INTO photos (userid, filename)
-    VALUES ($1, $2)
+    INSERT INTO photos (userid, filename, ahash)
+    VALUES ($1, $2, $3)
     RETURNING id
     `
     id := 0
-    err := db.QueryRow(query, userid, filename).Scan(&id)
+    err := db.QueryRow(query, userid, filename, ahash).Scan(&id)
     return err
 }
 
