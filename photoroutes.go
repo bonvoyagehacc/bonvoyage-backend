@@ -1,7 +1,6 @@
 package main
 
 import (
-    "fmt"
 	"bytes"
 	"archive/zip"
 	"encoding/json"
@@ -93,7 +92,6 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
     /* filter groupped pics by using blur level */
     filtered := []string{}
     for _, group := range groups {
-        fmt.Println("=-=-=-=")
         bestBlur := -1000000
         bestPic := ""
         for _, picpath := range group {
@@ -102,10 +100,9 @@ func galleryHandler(w http.ResponseWriter, r *http.Request) {
                 bestBlur = blurLevel
                 bestPic = picpath
             }
-            fmt.Println(blurLevel)
         }
         /* save least blurry pic */
-        filtered = append(filtered, SERVERURL+"/"+userhash+"/"+bestPic)
+        filtered = append(filtered, FILESURL+"/"+userhash+"/"+bestPic)
     }
 
 	w.Header().Add("content-type", "application/json")

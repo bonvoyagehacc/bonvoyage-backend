@@ -17,6 +17,7 @@ func main() {
         AllowedOrigins: []string{"https://pixolo.us", "http://localhost:3000"},
         AllowedHeaders: []string{"x-access-token", "Content-Type"},
         AllowCredentials: true,
+        // Debug: true,
     })
     handler := c.Handler(mux)
 
